@@ -123,6 +123,7 @@ select.f{font-family:var(--ui);cursor:pointer}
 .item .m{font-family:var(--mono);font-size:10px;color:var(--txt2)}
 .x{width:22px;height:22px;display:grid;place-items:center;border-radius:2px;color:var(--txt2);flex:0 0 auto}
 .x:hover{background:var(--mat3);color:var(--hi)}
+.x.ok:hover{color:var(--ok)}
 .empty{color:var(--txt2);font-size:11px;padding:8px 0;text-align:center}
 
 /* ---------- stage ---------- */
@@ -145,10 +146,17 @@ body.v3d #c3d{display:block}
 }
 .toast{
   position:absolute;left:50%;top:14px;transform:translateX(-50%);
-  background:var(--ink);color:var(--paper);padding:7px 12px;border-radius:var(--r);
+  background:var(--ink);color:var(--paper);padding:7px 8px 7px 12px;border-radius:var(--r);
   font-size:12px;opacity:0;transition:opacity .18s;pointer-events:none;z-index:5;
+  display:flex;align-items:center;gap:10px;max-width:min(86vw,420px);
 }
-.toast.on{opacity:1}
+.toast.on{pointer-events:auto;opacity:1}
+.toast .tmsg{flex:1;min-width:0}
+.toast .tact{
+  flex:0 0 auto;background:var(--hi);color:#fff;padding:5px 10px;border-radius:2px;
+  font-size:11px;font-weight:700;letter-spacing:.04em;
+}
+.toast .tact:hover{filter:brightness(1.1)}
 .err{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--txt2)}
 
 /* modal */
@@ -176,7 +184,8 @@ body.v3d #c3d{display:block}
 .wallrow .m{font-family:var(--mono);font-size:10px;color:var(--txt2)}
 .danger{background:#7A1B3C;border-color:#7A1B3C;color:#fff}
 body.group #secShape,body.group #secOps,body.group #secFurn,body.group #secItems,body.group #secSurf{display:none}
-body:not(.group) #secGroup{display:none}
+body:not(.group) #groupBody{display:none}
+body.group #curPlanHint,body.group #gpNew{display:none}
 body.ro #secShape,body.ro #secOps,body.ro #secFurn,body.ro #secItems,body.ro #secSurf,body.ro #secGroup{display:none}
 .tagro{background:var(--hi);color:#fff;padding:2px 7px;border-radius:2px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
 .code{font-family:var(--mono);font-size:22px;letter-spacing:.32em;text-align:center;padding:14px;background:var(--mat);border:1px solid var(--edge);border-radius:var(--r);margin:0 0 10px}
@@ -186,6 +195,21 @@ body.ro #secShape,body.ro #secOps,body.ro #secFurn,body.ro #secItems,body.ro #se
 .btn[disabled]{opacity:.4;cursor:not-allowed}
 .btn[disabled]:hover{background:var(--mat3)}
 .btn.gh[disabled]:hover{background:transparent}
+.subrow{display:flex;gap:6px;margin:8px 0 3px}
+.subrow span{flex:1;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.cornerpick{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.cornerpick button{
+  display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px;
+  background:var(--mat3);border:1px solid var(--edge);border-radius:var(--r);color:var(--txt2);font-size:10px;
+}
+.cornerpick button:hover{border-color:var(--ink3)}
+.cornerpick button[aria-pressed=true]{border-color:var(--hi);color:var(--hi);background:rgba(255,45,111,.08)}
+.cornerpick svg{width:22px;height:22px}
+.lshapePreview{
+  margin-top:10px;background:var(--mat);border:1px solid var(--edge);border-radius:var(--r);
+  padding:10px;display:flex;justify-content:center;
+}
+.lshapePreview svg{width:100%;height:auto;max-width:220px;display:block}
 body:not(.group) #tRooms{display:none}
 #mkcopyRow{display:none}
 body.ro #mkcopyRow{display:flex}
@@ -233,30 +257,46 @@ body.ro #mkcopyRow{display:flex}
 
     <details class="sec" id="secShape" open><summary>Room shape</summary><div class="body">
       <label class="lbl">Make a rectangle</label>
+      <div class="subrow"><span>Width</span><span>Depth</span></div>
       <div class="row">
-        <input class="f" id="rw" type="number" value="270" aria-label="Width in cm">
-        <input class="f" id="rd" type="number" value="400" aria-label="Depth in cm">
+        <input class="f" id="rw" type="number" value="270" aria-label="Width in cm" title="The overall width of the room, wall to wall.">
+        <input class="f" id="rd" type="number" value="400" aria-label="Depth in cm" title="The overall depth of the room, wall to wall.">
       </div>
       <div class="row" style="margin-top:6px"><button class="btn" id="mkRect">Apply rectangle</button></div>
 
       <label class="lbl">Make an L-shape</label>
+      <p class="hint" style="margin:0 0 8px">Set the room as if it had no missing corner, then say how big a corner is missing and which one.</p>
+      <div class="subrow"><span>Room width</span><span>Room depth</span></div>
       <div class="row">
-        <input class="f" id="lw" type="number" value="270" aria-label="Width in cm">
-        <input class="f" id="ld" type="number" value="400" aria-label="Depth in cm">
+        <input class="f" id="lw" type="number" value="270" aria-label="Room width in cm" title="The overall width of the room, wall to wall — as if the corner weren't missing.">
+        <input class="f" id="ld" type="number" value="400" aria-label="Room depth in cm" title="The overall depth of the room, wall to wall — as if the corner weren't missing.">
       </div>
-      <div class="row" style="margin-top:6px">
-        <input class="f" id="nw" type="number" value="140" aria-label="Notch width in cm">
-        <input class="f" id="nd" type="number" value="70" aria-label="Notch depth in cm">
+      <div class="subrow"><span>Cut-out width</span><span>Cut-out depth</span></div>
+      <div class="row">
+        <input class="f" id="nw" type="number" value="140" aria-label="Cut-out width in cm" title="How far the missing corner reaches in, measured along the top or bottom wall.">
+        <input class="f" id="nd" type="number" value="70" aria-label="Cut-out depth in cm" title="How far the missing corner reaches in, measured along the side wall.">
       </div>
-      <div class="row" style="margin-top:6px">
-        <select class="f" id="ncor">
-          <option value="tr" selected>Notch: top right</option>
-          <option value="tl">Notch: top left</option>
-          <option value="br">Notch: bottom right</option>
-          <option value="bl">Notch: bottom left</option>
-        </select>
+      <label class="lbl" style="margin-top:10px">Which corner is missing</label>
+      <div class="cornerpick" id="cornerpick" role="group" aria-label="Which corner is missing">
+        <button type="button" data-c="tl" aria-pressed="false" title="Top-left corner missing">
+          <svg viewBox="0 0 24 24"><path d="M8,2 H22 V22 H2 V8 H8 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          Top left
+        </button>
+        <button type="button" data-c="tr" aria-pressed="true" title="Top-right corner missing">
+          <svg viewBox="0 0 24 24"><path d="M2,2 H16 V8 H22 V22 H2 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          Top right
+        </button>
+        <button type="button" data-c="bl" aria-pressed="false" title="Bottom-left corner missing">
+          <svg viewBox="0 0 24 24"><path d="M2,2 H22 V22 H8 V16 H2 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          Bottom left
+        </button>
+        <button type="button" data-c="br" aria-pressed="false" title="Bottom-right corner missing">
+          <svg viewBox="0 0 24 24"><path d="M2,2 H22 V16 H16 V22 H2 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          Bottom right
+        </button>
       </div>
-      <div class="row" style="margin-top:6px"><button class="btn" id="mkL">Apply L-shape</button></div>
+      <div class="lshapePreview" id="lshapePreview"></div>
+      <div class="row" style="margin-top:10px"><button class="btn" id="mkL">Apply L-shape</button></div>
 
       <label class="lbl">Draw the shape</label>
       <div class="row">
@@ -315,6 +355,11 @@ body.ro #mkcopyRow{display:flex}
     </div></details>
 
     <details class="sec" id="secGroup" open><summary>Rooms in this floor plan</summary><div class="body">
+      <label class="lbl" style="margin-top:0">This floor plan</label>
+      <p class="hint" id="curPlanHint" style="margin:0 0 8px">No floor plan is open yet. Start one below, or open one you already have from <b>Layouts and floor plans</b> further down.</p>
+      <div class="row"><button class="btn pri" id="gpNew">New floor plan</button></div>
+      <div id="groupBody">
+      <label class="lbl">Rooms</label>
       <div class="list" id="members"></div>
       <label class="lbl">Add a room you already have</label>
       <div class="row">
@@ -339,6 +384,7 @@ body.ro #mkcopyRow{display:flex}
         <button class="btn gh" id="arrGrid">Line up in a grid</button>
       </div>
       <p class="hint">Turn on <b>Move rooms</b>, then drag a room. Rooms snap to each other so the walls meet. Arrow keys nudge the room you select.</p>
+      </div>
     </div></details>
 
     <details class="sec"><summary>Layouts and floor plans</summary><div class="body">
@@ -368,6 +414,13 @@ body.ro #mkcopyRow{display:flex}
       <div class="row" id="mkcopyRow" style="margin-top:6px">
         <button class="btn pri" id="mkcopy">Make a copy I can change</button>
       </div>
+      <label class="lbl">Backup file</label>
+      <p class="hint" id="bkStatus" style="margin:0 0 8px">Checking…</p>
+      <div class="row" id="bkRow">
+        <button class="btn" id="bkConnect">Connect a backup file</button>
+      </div>
+      <p class="note">This writes a copy of everything to a real file on your computer, every time the app saves. Clearing your browser's data cannot touch that file. Chrome and Edge only — export the file now and then as well, as a second copy.</p>
+
       <label class="lbl">Files</label>
       <div class="row">
         <button class="btn gh" id="expJ">Export JSON</button>
@@ -377,6 +430,12 @@ body.ro #mkcopyRow{display:flex}
         <button class="btn gh" id="expP">Save the plan as a PNG</button>
       </div>
       <input type="file" id="file" accept="application/json" hidden>
+    </div></details>
+
+    <details class="sec" id="secTrash"><summary>Recently deleted</summary><div class="body">
+      <div class="list" id="trashList"></div>
+      <div class="row" style="margin-top:8px"><button class="btn gh" id="emptyTrash">Empty trash</button></div>
+      <p class="note">Deleted rooms and floor plans stay here for 30 days, in case you need them back.</p>
     </div></details>
 
   </aside>
@@ -397,6 +456,8 @@ body.ro #mkcopyRow{display:flex}
       <button class="tool" id="tGrid" aria-pressed="true">Grid</button>
       <button class="tool" id="tDim" aria-pressed="true">Sizes</button>
       <button class="tool" id="tClr" aria-pressed="false">Clearance</button>
+      <button class="tool" id="tWalls" aria-pressed="false" title="See through the walls in the 3D view">Walls</button>
+      <button class="tool" id="tFront" aria-pressed="true" title="Mark the front and back of each item in the 3D view">Front</button>
     </div>
     <div class="keys">drag&nbsp;=&nbsp;move · R&nbsp;=&nbsp;turn&nbsp;90° · arrows&nbsp;=&nbsp;nudge<br>Alt&nbsp;=&nbsp;free · Del&nbsp;=&nbsp;remove · Ctrl+D&nbsp;=&nbsp;copy</div>
     <div class="toast" id="toast"></div>
@@ -416,6 +477,7 @@ body.ro #mkcopyRow{display:flex}
 "use strict";
 /* ============================ state ============================ */
 var CATS = {
+  person:{label:"People", col:"#5B7A93", cl:{f:0,s:0}, mat:"paint"},
   bed:{label:"Beds", col:"#8CA0B3", cl:{f:70,s:60}, mat:"birch"},
   storage:{label:"Wardrobes and storage", col:"#B0946C", cl:{f:75,s:0}, mat:"birch"},
   seat:{label:"Seating", col:"#9C8AA5", cl:{f:45,s:0}, mat:"fabric"},
@@ -449,6 +511,7 @@ var CAT = [
   ["PAX frame 50x58 h236","IKEA","storage",50,58,236],
   ["PAX frame 100x58 h236","IKEA","storage",100,58,236],
   ["Wardrobe, free standing","","storage",100,60,200],
+  ["Modular rail clothes system","","storage",200,40,220,{model:"railsystem"}],
   ["BILLY 80 bookcase","IKEA","storage",80,28,202],
   ["BILLY 40 bookcase","IKEA","storage",40,28,202],
   ["KALLAX 2x2","IKEA","storage",77,39,77],
@@ -575,16 +638,19 @@ var CAT = [
   ["Radiator, wall 60","","wall",60,10,60,{model:"radiator",mount:"wall",z:12}],
   ["Towel rail 60","","wall",60,8,10,{model:"panel",mount:"wall",z:120,mat:"steel"}],
   ["Boxed shelving, wall 80","","wall",80,25,80,{model:"shelving",mount:"wall",z:100}],
-  ["Wall storage, cube 4","","wall",77,30,77,{model:"cubes",mount:"wall",z:90}]
+  ["Wall storage, cube 4","","wall",77,30,77,{model:"cubes",mount:"wall",z:90}],
+
+  ["Adult person","","person",46,32,172,{shape:"round"}],
+  ["Child person","","person",32,24,120,{shape:"round"}]
 ];
 
-var S = {layouts:[], activeId:null, custom:[], groups:[], activeGroup:null, lastGroup:null};
+var S = {layouts:[], activeId:null, custom:[], groups:[], activeGroup:null, lastGroup:null, trash:[]};
 var L = null, G = null, MODE = "room";
 var OFF = {x:0, y:0};
 var sel = null;           /* {t:'item'|'op'|'vert'|'note'|'room', i:index, R:layout, off:{x,y}} */
 var tool = "select";      /* select | draw | edit | rooms | note | zone | arrow | measure */
 var draft = [];           /* points while you draw */
-var opt = {grid:true, dim:true, clr:false};
+var opt = {grid:true, dim:true, clr:false, wallsGhost:false, front:true};
 var view = {s:1, ox:0, oy:0};
 var uid = function(){ return Math.random().toString(36).slice(2,10); };
 var clamp = function(v,a,b){ return Math.max(a, Math.min(b, v)); };
@@ -614,10 +680,22 @@ function storeSet(key, value, shared){
   }catch(e){ return Promise.reject(e); }
 }
 
-function toast(t){
+function toast(t, action){
   var el = document.getElementById("toast");
-  el.textContent = t; el.classList.add("on");
-  clearTimeout(el._t); el._t = setTimeout(function(){ el.classList.remove("on"); }, 1600);
+  el.innerHTML = '<span class="tmsg"></span>';
+  el.querySelector(".tmsg").textContent = t;
+  if(action){
+    var b = document.createElement("button");
+    b.className = "tact"; b.textContent = action.label;
+    b.addEventListener("click", function(){
+      el.classList.remove("on"); clearTimeout(el._t);
+      action.fn();
+    });
+    el.appendChild(b);
+  }
+  el.classList.add("on");
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.classList.remove("on"); }, action ? 6000 : 1600);
 }
 function markSaving(){ document.getElementById("stat").textContent = "saving"; }
 function markSaved(){ document.getElementById("stat").textContent = ro() ? "view only" : "saved"; }
@@ -630,6 +708,7 @@ function save(){
       storeSet(KEY, JSON.stringify(S)).then(function(){ markSaved(); })
         .catch(function(){ document.getElementById("stat").textContent = "not saved"; });
     }catch(e){ document.getElementById("stat").textContent = "not saved"; }
+    writeBackupNow();
   }, 500);
 }
 
@@ -641,6 +720,139 @@ function load(){
       boot(d);
     }).catch(function(){ boot(null); });
   }catch(e){ boot(null); }
+}
+
+/* ============================ backup file ============================
+   Writes a copy of everything to a real file on the user's own computer,
+   using the File System Access API. That file sits outside the browser's
+   storage, so clearing the browser's cache or site data cannot touch it.
+   Only Chrome and Edge support this today; other browsers fall back to
+   the manual Export button.
+*/
+var backupHandle = null, backupState = "checking", backupAt = null;
+function fsaSupported(){ return typeof window.showSaveFilePicker === "function"; }
+
+function idbOpen(){
+  return new Promise(function(resolve, reject){
+    if(!window.indexedDB){ reject(new Error("no indexeddb")); return; }
+    var req = indexedDB.open("roomplanner-backup", 1);
+    req.onupgradeneeded = function(){ req.result.createObjectStore("handles"); };
+    req.onsuccess = function(){ resolve(req.result); };
+    req.onerror = function(){ reject(req.error); };
+  });
+}
+function idbGetHandle(){
+  return idbOpen().then(function(db){
+    return new Promise(function(resolve, reject){
+      var rq = db.transaction("handles","readonly").objectStore("handles").get("file");
+      rq.onsuccess = function(){ resolve(rq.result || null); };
+      rq.onerror = function(){ reject(rq.error); };
+    });
+  });
+}
+function idbSetHandle(handle){
+  return idbOpen().then(function(db){
+    return new Promise(function(resolve, reject){
+      var tx = db.transaction("handles","readwrite");
+      tx.objectStore("handles").put(handle, "file");
+      tx.oncomplete = function(){ resolve(); };
+      tx.onerror = function(){ reject(tx.error); };
+    });
+  });
+}
+function idbClearHandle(){
+  return idbOpen().then(function(db){
+    return new Promise(function(resolve, reject){
+      var tx = db.transaction("handles","readwrite");
+      tx.objectStore("handles").delete("file");
+      tx.oncomplete = function(){ resolve(); };
+      tx.onerror = function(){ reject(tx.error); };
+    });
+  });
+}
+
+function setBackupState(state){ backupState = state; renderBackupUI(); }
+function renderBackupUI(){
+  var st = $("bkStatus"), row = $("bkRow");
+  if(!st || !row) return;
+  if(backupState === "checking"){ st.textContent = "Checking…"; row.innerHTML = ""; return; }
+  if(backupState === "unsupported"){
+    st.textContent = "Not available in this browser. Use Export now and then instead.";
+    row.innerHTML = ""; return;
+  }
+  if(backupState === "none"){
+    st.textContent = "Not connected. Your plans only live in this browser.";
+    row.innerHTML = '<button class="btn" id="bkConnect">Connect a backup file</button>';
+    on("bkConnect","click", connectBackup);
+    return;
+  }
+  if(backupState === "needs-permission"){
+    st.textContent = "Backup file found, but this page needs permission again.";
+    row.innerHTML = '<button class="btn" id="bkReconnect">Reconnect the file</button>'+
+                     '<button class="btn gh" id="bkForget">Forget this file</button>';
+    on("bkReconnect","click", reconnectBackup);
+    on("bkForget","click", forgetBackup);
+    return;
+  }
+  st.textContent = "Connected"+(backupAt ? " — last written "+relTime(backupAt) : "")+".";
+  row.innerHTML = '<button class="btn gh" id="bkForget">Forget this file</button>';
+  on("bkForget","click", forgetBackup);
+}
+
+function connectBackup(){
+  if(!fsaSupported()){ toast("Your browser can't do this. Try Chrome or Edge."); return; }
+  window.showSaveFilePicker({
+    suggestedName: "measure-twice-backup.json",
+    types: [{description:"Measure Twice backup", accept:{"application/json":[".json"]}}]
+  }).then(function(handle){
+    backupHandle = handle;
+    idbSetHandle(handle).catch(function(){});
+    return writeBackupNow();
+  }).then(function(){
+    setBackupState("connected");
+    toast("Connected. Every save now also writes to this file.");
+  }).catch(function(err){
+    if(err && err.name === "AbortError") return;
+    toast("The file could not be connected.");
+  });
+}
+function reconnectBackup(){
+  if(!backupHandle){ setBackupState("none"); return; }
+  backupHandle.requestPermission({mode:"readwrite"}).then(function(perm){
+    if(perm === "granted"){
+      return writeBackupNow().then(function(){ setBackupState("connected"); toast("Reconnected."); });
+    }
+    toast("Permission was not given.");
+  }).catch(function(){ toast("The file could not be reconnected."); });
+}
+function forgetBackup(){
+  backupHandle = null;
+  idbClearHandle().catch(function(){});
+  setBackupState("none");
+  toast("This file will no longer be updated.");
+}
+function writeBackupNow(){
+  if(!backupHandle) return Promise.resolve();
+  return backupHandle.queryPermission({mode:"readwrite"}).then(function(perm){
+    if(perm !== "granted"){ setBackupState("needs-permission"); return; }
+    return backupHandle.createWritable().then(function(w){
+      return w.write(JSON.stringify(S)).then(function(){ return w.close(); });
+    }).then(function(){
+      backupAt = Date.now();
+      if(backupState === "connected"){ renderBackupUI(); }
+    });
+  }).catch(function(){ /* leave the state as it was; the next save tries again */ });
+}
+function initBackup(){
+  if(!fsaSupported() || !window.indexedDB){ setBackupState("unsupported"); return; }
+  idbGetHandle().then(function(handle){
+    if(!handle){ setBackupState("none"); return; }
+    backupHandle = handle;
+    return handle.queryPermission({mode:"readwrite"}).then(function(perm){
+      if(perm === "granted"){ return writeBackupNow().then(function(){ setBackupState("connected"); }); }
+      setBackupState("needs-permission");
+    });
+  }).catch(function(){ setBackupState("none"); });
 }
 
 /* ============================ layout model ============================ */
@@ -665,6 +877,7 @@ function boot(data){
     S = data;
     if(!S.custom) S.custom = [];
     if(!S.groups) S.groups = [];
+    if(!S.trash) S.trash = [];
     if(S.lastGroup === undefined) S.lastGroup = S.activeGroup || null;
     L = S.layouts.filter(function(x){ return x.id === S.activeId; })[0] || S.layouts[0];
     if(S.activeGroup){
@@ -673,13 +886,15 @@ function boot(data){
     }
   }else{
     L = sketchLayout();
-    S = {layouts:[L], activeId:L.id, custom:[], groups:[], activeGroup:null, lastGroup:null};
+    S = {layouts:[L], activeId:L.id, custom:[], groups:[], activeGroup:null, lastGroup:null, trash:[]};
     save();
   }
+  purgeTrash();
   buildCatalogue();
   refreshAll();
   fit();
   markSaved();
+  initBackup();
 }
 
 function touch(){ var d = DOC(); if(d){ d.updated = Date.now(); } save(); }
@@ -730,6 +945,31 @@ function rotateRoom(R, quarters){
   R.items.forEach(function(it){ it.x -= b.x0; it.y -= b.y0; });
   (R.notes||[]).forEach(function(n){ n.x1 -= b.x0; n.x2 -= b.x0; n.y1 -= b.y0; n.y2 -= b.y0; });
   return {dx:b.x0, dy:b.y0};
+}
+function rotateRoomFree(R, deg){
+  var rad = deg*Math.PI/180, c = Math.cos(rad), s = Math.sin(rad);
+  var rot = function(p){ return {x: p.x*c - p.y*s, y: p.x*s + p.y*c}; };
+  R.poly = R.poly.map(rot);
+  R.items.forEach(function(it){
+    var np = rot({x:it.x, y:it.y});
+    it.x = np.x; it.y = np.y;
+    it.rot = ((it.rot + deg) % 360 + 360) % 360;
+  });
+  (R.notes||[]).forEach(function(n){
+    var a = rot({x:n.x1, y:n.y1}), b = rot({x:n.x2, y:n.y2});
+    n.x1 = a.x; n.y1 = a.y; n.x2 = b.x; n.y2 = b.y;
+  });
+  var b = bbox(R.poly);
+  R.poly.forEach(function(p){ p.x -= b.x0; p.y -= b.y0; });
+  R.items.forEach(function(it){ it.x -= b.x0; it.y -= b.y0; });
+  (R.notes||[]).forEach(function(n){ n.x1 -= b.x0; n.x2 -= b.x0; n.y1 -= b.y0; n.y2 -= b.y0; });
+  return {dx:b.x0, dy:b.y0};
+}
+/* the one every button should call: exact swaps for 90° multiples (no drift,
+   however many times you turn the room), the general rotation otherwise */
+function turnRoom(R, deg){
+  if(deg % 90 === 0){ return rotateRoom(R, deg/90); }
+  return rotateRoomFree(R, deg);
 }
 function newGroup(name){ return {id:uid(), name:name||"New floor plan", created:Date.now(), updated:Date.now(), members:[], notes:[]}; }
 
@@ -913,14 +1153,15 @@ function texFor(kind){
   TEXC[kind] = t;
   return t;
 }
-function matFor(id, color, rx, ry, dbl){
+function matFor(id, color, rx, ry, dbl, opacityOverride){
   var d = MATS[id] || MATS.paint;
   var col = d.uc ? (color || "#DDDDDD") : d.c;
   rx = Math.max(0.2, rx || 1); ry = Math.max(0.2, ry || 1);
-  var key = id+"|"+col+"|"+rx.toFixed(1)+"|"+ry.toFixed(1)+"|"+(dbl?"d":"s");
+  var op = (opacityOverride !== undefined) ? opacityOverride : d.op;
+  var key = id+"|"+col+"|"+rx.toFixed(1)+"|"+ry.toFixed(1)+"|"+(dbl?"d":"s")+"|"+(op!==undefined?op.toFixed(2):"-");
   if(MATC[key]) return MATC[key];
   var o = {color:new THREE.Color(col), roughness:d.r, metalness:d.m};
-  if(d.op !== undefined){ o.transparent = true; o.opacity = d.op; }
+  if(op !== undefined){ o.transparent = true; o.opacity = op; o.depthWrite = op >= 0.9; }
   if(d.t){
     var base = texFor(d.t);
     if(base){ var t = base.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); o.map = t; }
@@ -1851,6 +2092,43 @@ function legs4(w, d, h, t, inset, mat){
   for(i=0;i<4;i++){ o.push({k:"box", x:pos[i][0], y:pos[i][1], z:0, w:t, d:t, h:h, m:mat}); }
   return o;
 }
+function beddingParts(it, mh, base, opts){
+  opts = opts || {};
+  var w = it.w, d = it.d, h = it.h, top = base+mh;
+  var headroom = Math.max(0.4, h-top);
+  var duvetCol = opts.duvetCol || shade(it.color||"#8CA0B3", .3);
+  var pillowCol = "#F8F6F0";
+  var p = [{k:"box", x:0, y:Math.min(6,d*0.05), z:base, w:Math.max(w*0.5,w-6), d:Math.max(d*0.3,d-16), h:mh, m:"fabric", c:"#EDE9E1"}];
+
+  /* duvet: a puffed body over the lower part of the bed, folded back near the pillows */
+  var headY = -d/2 + d*0.11;
+  var duvetT = Math.min(headroom*0.45, Math.max(1, mh*0.3));
+  var duvetLen = d*0.6;
+  var duvetFrontY = d/2 - d*0.02, duvetBackY = duvetFrontY - duvetLen;
+  var duvetCY = (duvetFrontY+duvetBackY)/2;
+  p.push({k:"box", x:0, y:duvetCY, z:top, w:Math.max(w*0.6,w-2), d:duvetLen, h:duvetT, m:"fabric", c:duvetCol});
+  p.push({k:"box", x:0, y:duvetCY, z:top+duvetT*0.55, w:Math.max(w*0.3,w-14), d:Math.max(duvetLen*0.3,duvetLen-10), h:duvetT*0.5, m:"fabric", c:duvetCol});
+
+  var flapY0 = duvetBackY, flapY1 = headY + d*0.09;
+  var flapLen = Math.max(d*0.02, Math.abs(flapY0-flapY1));
+  var flapCY = (flapY0+flapY1)/2;
+  p.push({k:"box", x:0, y:flapCY, z:top, w:Math.max(w*0.4,w-8), d:flapLen, h:duvetT*0.4, m:"fabric", c:shade(duvetCol,.12)});
+
+  /* two layered pillows, side by side */
+  if(!opts.noPillows){
+    var pillowW = Math.max(w*0.15, Math.min(w*0.4, (w-16)/2));
+    var pillowD = Math.min(24, d*0.22);
+    var pillowH1 = Math.min(headroom*0.35, Math.max(1, mh*0.32));
+    var pillowH2 = pillowH1*0.6;
+    var gap = Math.min(6, w*0.02);
+    var px = (pillowW+gap)/2;
+    [-px, px].forEach(function(x){
+      p.push({k:"box", x:x, y:headY, z:top, w:pillowW, d:pillowD, h:pillowH1, m:"fabric", c:pillowCol});
+      p.push({k:"box", x:x, y:headY, z:top+pillowH1, w:Math.max(pillowW*0.3,pillowW-8), d:Math.max(pillowD*0.3,pillowD-6), h:pillowH2, m:"fabric", c:pillowCol});
+    });
+  }
+  return p;
+}
 var MODELS = {
   slab: function(it){ return [{k:"fp", in:0, z:0, h:it.h}]; },
 
@@ -1874,54 +2152,78 @@ var MODELS = {
     return p;
   },
   bed: function(it){
-    var mh = Math.min(20, it.h*0.28), base = Math.max(6, it.h-mh-18), hb = it.h;
+    var h = it.h;
+    var mh = Math.min(20, h*0.28);
+    var reserve = Math.min(18, h*0.2);
+    var base = Math.max(h*0.1, h-mh-reserve);
     var p = [];
     /* frame */
-    p.push({k:"box", x:0, y:2, z:0, w:it.w, d:it.d-4, h:base, c:shade(it.color,-.15)});
-    /* mattress */
-    p.push({k:"box", x:0, y:6, z:base, w:it.w-6, d:it.d-16, h:mh, m:"fabric", c:"#EDE9E1"});
-    /* pillow */
-    p.push({k:"box", x:0, y:-it.d/2+18, z:base+mh, w:it.w-22, d:22, h:8, m:"fabric", c:"#F6F4EF"});
+    p.push({k:"box", x:0, y:Math.min(2,it.d*0.02), z:0, w:it.w, d:Math.max(it.d*0.5,it.d-4), h:base, c:shade(it.color,-.15)});
+    p = p.concat(beddingParts(it, mh, base));
     /* headboard */
-    p.push({k:"box", x:0, y:-it.d/2+2, z:0, w:it.w, d:4, h:hb});
+    p.push({k:"box", x:0, y:-it.d/2+Math.min(2,it.d*0.4), z:0, w:it.w, d:Math.min(4,it.d*0.8), h:h});
     return p;
   },
   bedstore: function(it){
-    var p = MODELS.bed(it), base = Math.max(6, it.h-Math.min(20,it.h*0.28)-18);
+    var h = it.h;
+    var mh = Math.min(20, h*0.28);
+    var reserve = Math.min(18, h*0.2);
+    var base = Math.max(h*0.1, h-mh-reserve);
+    var p = MODELS.bed(it);
     var n = 2, i, dw = (it.w-12)/n;
+    var dz = Math.min(4, base*0.3), dh = Math.max(1, base-dz*2);
     for(i=0;i<n;i++){
-      p.push({k:"box", x:-it.w/2+6+dw*(i+0.5), y:it.d/2-1, z:4, w:dw-4, d:2, h:base-8, c:shade(it.color,.12)});
+      p.push({k:"box", x:-it.w/2+6+dw*(i+0.5), y:it.d/2-1, z:dz, w:Math.max(2,dw-4), d:2, h:dh, c:shade(it.color,.12)});
     }
     return p;
   },
   loftbed: function(it){
-    var deck = Math.max(60, it.h-45), p = [];
-    p.push({k:"box", x:0, y:0, z:deck, w:it.w, d:it.d, h:8, c:shade(it.color,-.1)});
-    p.push({k:"box", x:0, y:6, z:deck+8, w:it.w-8, d:it.d-16, h:16, m:"fabric", c:"#EDE9E1"});
-    p = p.concat(legs4(it.w, it.d, deck, 8, 0, null));
+    var h = it.h, w = it.w, d = it.d, p = [];
+    var deckH = Math.min(8, h*0.05);
+    var deck = Math.max(h*0.3, h-45);
+    deck = Math.min(deck, h-deckH-1);
+    var mh = clamp((h-(deck+deckH))*0.5, 0.5, 16);
+    p.push({k:"box", x:0, y:0, z:deck, w:w, d:d, h:deckH, c:shade(it.color,-.1)});
+    p = p.concat(beddingParts(it, mh, deck+deckH, {noPillows: h-(deck+deckH+mh) < 20}));
+    p = p.concat(legs4(w, d, deck, 8, 0, null));
     /* guard rails */
-    p.push({k:"box", x:-it.w/2+4, y:0, z:deck+8, w:4, d:it.d-20, h:32, c:shade(it.color,-.1)});
-    p.push({k:"box", x:it.w/2-4, y:0, z:deck+8, w:4, d:it.d-20, h:32, c:shade(it.color,-.1)});
+    var railH = Math.min(32, Math.max(1, (h-(deck+deckH))*0.9));
+    p.push({k:"box", x:-w/2+4, y:0, z:deck+deckH, w:4, d:Math.max(2,d-20), h:railH, c:shade(it.color,-.1)});
+    p.push({k:"box", x: w/2-4, y:0, z:deck+deckH, w:4, d:Math.max(2,d-20), h:railH, c:shade(it.color,-.1)});
     return p;
   },
   bunk: function(it){
-    var p = [], low = Math.max(28, it.h*0.22), high = it.h-45;
-    [low, high].forEach(function(z){
-      p.push({k:"box", x:0, y:0, z:z, w:it.w, d:it.d, h:7, c:shade(it.color,-.1)});
-      p.push({k:"box", x:0, y:6, z:z+7, w:it.w-8, d:it.d-16, h:15, m:"fabric", c:"#EDE9E1"});
+    var h = it.h, w = it.w, d = it.d, p = [];
+    var platT = Math.min(7, h*0.04);
+    var mh = Math.min(15, h*0.09);
+    var low = Math.min(h*0.22, h-platT-mh-2);
+    var high = Math.min(Math.max(h*0.5, h-45), h-platT-mh-1);
+    [[low,0],[high,1]].forEach(function(pair){
+      var z = pair[0], idx = pair[1];
+      p.push({k:"box", x:0, y:0, z:z, w:w, d:d, h:platT, c:shade(it.color,-.1)});
+      p = p.concat(beddingParts(it, mh, z+platT, {noPillows: idx===0 && (high-(z+platT+mh)) < 30}));
     });
-    p = p.concat(legs4(it.w, it.d, it.h, 8, 0, null));
-    p.push({k:"box", x:it.w/2-4, y:0, z:high+7, w:4, d:it.d-24, h:30, c:shade(it.color,-.1)});
+    p = p.concat(legs4(w, d, h, 8, 0, null));
+    var railH = Math.min(30, Math.max(1, (h-(high+platT))*0.85));
+    p.push({k:"box", x:w/2-4, y:0, z:high+platT, w:4, d:Math.max(2,d-24), h:railH, c:shade(it.color,-.1)});
     return p;
   },
   cot: function(it){
-    var p = [{k:"box", x:0, y:0, z:20, w:it.w-8, d:it.d-8, h:10, m:"fabric", c:"#F0EDE6"}];
-    p = p.concat(legs4(it.w, it.d, it.h, 6, 0, null));
+    var h = it.h, w = it.w, d = it.d;
+    var baseZ = Math.min(20, h*0.35);
+    var mattH = Math.min(10, h*0.15);
+    var top = baseZ + mattH;
+    var p = [{k:"box", x:0, y:0, z:baseZ, w:w-8, d:d-8, h:mattH, m:"fabric", c:"#F0EDE6"}];
+    var blanketT = clamp((h-top)*0.3, 0.3, 4);
+    p.push({k:"box", x:0, y:d*0.08, z:top, w:Math.max(2,w-16), d:Math.max(2,d*0.5), h:blanketT, m:"fabric", c:shade(it.color||"#8CA0B3", .3)});
+    var pillowH = clamp((h-top-blanketT)*0.6, 0.3, 4);
+    p.push({k:"box", x:0, y:-d/2+d*0.14, z:top, w:Math.max(2,w*0.4), d:Math.max(2,d*0.16), h:pillowH, m:"fabric", c:"#F8F6F0"});
+    p = p.concat(legs4(w, d, h, 6, 0, null));
     var n = 8, i;
     for(i=0;i<=n;i++){
-      var x = -it.w/2+4 + (it.w-8)*i/n;
-      p.push({k:"box", x:x, y:-it.d/2+3, z:0, w:2.5, d:2.5, h:it.h, c:shade(it.color,-.05)});
-      p.push({k:"box", x:x, y:it.d/2-3, z:0, w:2.5, d:2.5, h:it.h, c:shade(it.color,-.05)});
+      var x = -w/2+4 + (w-8)*i/n;
+      p.push({k:"box", x:x, y:-d/2+3, z:0, w:2.5, d:2.5, h:h, c:shade(it.color,-.05)});
+      p.push({k:"box", x:x, y: d/2-3, z:0, w:2.5, d:2.5, h:h, c:shade(it.color,-.05)});
     }
     return p;
   },
@@ -1966,14 +2268,67 @@ var MODELS = {
   },
 
   wardrobe: function(it){
-    var pl = 6, p = [];
-    p.push({k:"box", x:0, y:0, z:pl, w:it.w, d:it.d, h:it.h-pl, c:shade(it.color,-.12)});
-    p.push({k:"box", x:0, y:-2, z:0, w:it.w-6, d:it.d-6, h:pl, c:"#3A3D3B"});
-    var n = it.w > 75 ? 2 : 1, i, dw = (it.w-3)/n;
-    for(i=0;i<n;i++){
-      p.push({k:"box", x:-it.w/2+1.5+dw*(i+0.5), y:it.d/2-1, z:pl+1, w:dw-2.5, d:2.5, h:it.h-pl-2});
-      p.push({k:"box", x:-it.w/2+1.5+dw*(i+0.5)+(n>1 ? (i? -dw/2+5 : dw/2-5) : dw/2-6),
-              y:it.d/2-1, z:it.h*0.5, w:2, d:2, h:14, m:"steel"});
+    var w = it.w, d = it.d || 60, h = it.h;
+    var carc = shade(it.color,-.12);
+    var pl = Math.min(6, h*0.3);
+    var topT = Math.min(3, h*0.15);
+    var sideT = Math.min(2.5, Math.min(w,d)*0.2);
+    var backT = Math.min(2, d*0.15);
+    var innerZ0 = pl, innerZ1 = h - topT;
+    var innerH = Math.max(0, innerZ1 - innerZ0);
+    var p = [{k:"box", x:0, y:-2, z:0, w:w-6, d:d-6, h:pl, c:"#3A3D3B"}];
+
+    if(innerH <= 1){
+      p.push({k:"box", x:0, y:0, z:pl, w:w, d:d, h:Math.max(0.5, h-pl), c:carc});
+      return p;
+    }
+
+    var innerW = Math.max(2, w - sideT*2);
+    var innerD = Math.max(2, d - backT - 1);
+    var backEdge = -d/2+backT, frontEdge = d/2;
+    p.push({k:"box", x:-(w/2-sideT/2), y:0, z:innerZ0, w:sideT, d:d, h:innerH, c:carc});
+    p.push({k:"box", x: (w/2-sideT/2), y:0, z:innerZ0, w:sideT, d:d, h:innerH, c:carc});
+    p.push({k:"box", x:0, y:backEdge-backT/2, z:innerZ0, w:innerW, d:backT, h:innerH, c:carc});
+    p.push({k:"box", x:0, y:0, z:innerZ1, w:w, d:d, h:topT, c:carc});
+
+    var twoZone = w > 75;
+    var dividerT = twoZone ? Math.min(2, innerW*0.06) : 0;
+    var zoneW = twoZone ? Math.max(2, (innerW-dividerT)/2) : innerW;
+    var railCX = twoZone ? (zoneW/2+dividerT/2) : 0;
+    var drawCX = -railCX;
+    if(twoZone){
+      p.push({k:"box", x:0, y:(backEdge+frontEdge)/2, z:innerZ0, w:dividerT, d:innerD, h:innerH, c:carc});
+    }
+
+    /* hanging rail, with a few schematic garments */
+    var railZ = innerZ0 + innerH*0.78;
+    var floorGap = Math.min(4, innerH*0.06);
+    var available = Math.max(0, railZ-innerZ0-floorGap);
+    var railThick = Math.min(1.6, zoneW*0.1, innerH*0.15);
+    p.push({k:"box", x:railCX, y:backT/2, z:railZ, w:zoneW*0.86, d:railThick, h:railThick, m:"steel"});
+    var n = clamp(Math.round(zoneW/14), 2, 5);
+    var slotW = (zoneW*0.8)/n, xStart = railCX - zoneW*0.4;
+    for(var i=0;i<n;i++){
+      var frac = 0.5 + 0.15*(i%3);
+      var gLen = Math.min(railZ-innerZ0, Math.max(2, available*frac));
+      var gx = xStart + slotW*(i+0.5);
+      var gw = slotW*0.68;
+      var gd = Math.min(innerD*0.5, 6);
+      var tone = (i%2===0) ? "#F3F1EA" : "#E9E4D8";
+      p.push({k:"box", x:gx, y:backT/2, z:railZ-gLen, w:gw, d:gd, h:gLen, c:tone, m:"paint"});
+    }
+
+    /* a simple stack of drawers, when the wardrobe is wide enough for two zones */
+    if(twoZone){
+      var dn = clamp(Math.round(innerH/24), 2, 5), dh = innerH/dn;
+      for(var j=0;j<dn;j++){
+        var dz0 = innerZ0 + dh*j;
+        var gap = Math.min(1, dh*0.12);
+        var dzh = Math.max(dh*0.5, dh - gap*2);
+        var fInset = Math.min(1.3, innerD*0.3);
+        p.push({k:"box", x:drawCX, y:frontEdge-fInset, z:dz0+gap, w:zoneW-3, d:Math.min(2.2,innerD*0.4), h:dzh, c:shade(it.color,.05), m:"paint"});
+        p.push({k:"box", x:drawCX, y:frontEdge-Math.min(0.2,fInset*0.2), z:dz0+dh/2, w:zoneW*0.3, d:Math.min(1.4,innerD*0.3), h:Math.min(1.6,dzh*0.3), m:"steel"});
+      }
     }
     return p;
   },
@@ -2131,6 +2486,64 @@ var MODELS = {
       p.push({k:"box", x:0, y:0, z:it.h*(0.25+i*0.13), w:it.w-6, d:1.5, h:1.5, m:"steel"});
     }
     return p;
+  },
+  person: function(it){
+    var w = it.w, dep = it.d || it.w, h = it.h;
+    var skin = "#D9A578";
+    var cloth = it.color || "#5B7A93", clothD = shade(cloth, -.18);
+    var legH = h*0.47, hipH = h*0.14, chestH = h*0.20, neckH = h*0.035;
+    var headBudget = Math.max(6, h - (legH+hipH+chestH+neckH));
+    var headD = Math.min(w*0.5, dep*0.85, headBudget*0.98);
+    var hipW = w*0.5, hipD = dep*0.55;
+    var chestW = w*0.68, chestD = dep*0.5;
+    var legW = hipW*0.38, legGap = hipW*0.14, footD = dep*0.5;
+    var legX = legGap/2 + legW/2;
+    var armW = w*0.11, armD = dep*0.32, armH = hipH + chestH*0.92;
+    var armX = chestW/2 + armW/2 + w*0.015;
+    if(armX + armW/2 > w/2){ armX = Math.max(chestW/2, w/2 - armW/2); }
+    return [
+      {k:"box", x:-legX, y:0, z:0, w:legW, d:footD, h:legH, c:"#2E3438"},
+      {k:"box", x: legX, y:0, z:0, w:legW, d:footD, h:legH, c:"#2E3438"},
+      {k:"box", x:0, y:0, z:legH, w:hipW, d:hipD, h:hipH, c:clothD},
+      {k:"box", x:0, y:0, z:legH+hipH, w:chestW, d:chestD, h:chestH, c:cloth},
+      {k:"box", x:-armX, y:0, z:legH+hipH*0.3, w:armW, d:armD, h:armH, c:cloth},
+      {k:"box", x: armX, y:0, z:legH+hipH*0.3, w:armW, d:armD, h:armH, c:cloth},
+      {k:"cyl", x:0, y:0, z:legH+hipH+chestH, w:headD*0.55, d:headD*0.55, h:neckH, c:skin},
+      {k:"cyl", x:0, y:0, z:legH+hipH+chestH+neckH, w:headD, d:headD, h:headD, c:skin}
+    ];
+  },
+  railsystem: function(it){
+    var w = it.w, d = it.d || 40, h = it.h;
+    var shelfCol = it.color || "#2B2D2A";
+    var poleD = clamp(Math.min(w,d)*0.08, 1.5, Math.min(3.5, Math.min(w,d)*0.9));
+    var barH = clamp(h*0.012, 1.5, 2.5);
+    var shelfT = clamp(h*0.018, 2, 3.5);
+    var railZ = h*0.7;
+    var railThick = Math.min(2.2, d*0.25, poleD);
+    var floorGap = clamp(h*0.03, 5, 12);
+    var available = Math.max(0, railZ - floorGap);
+    var n = clamp(Math.round(w/16), 2, 9);
+    var slotW = (w*0.9)/n, xStart = -w*0.45;
+    var poleX = w/2 - poleD/2 - 0.3;
+    var p = [
+      {k:"cyl", x:-poleX, y:0, z:0, w:poleD, d:poleD, h:h, m:"steel"},
+      {k:"cyl", x: poleX, y:0, z:0, w:poleD, d:poleD, h:h, m:"steel"},
+      {k:"box", x:0, y:0, z:h-barH, w:w-1, d:poleD, h:barH, m:"steel"},
+      {k:"box", x:0, y:0, z:0, w:w-1, d:poleD, h:barH, m:"steel"},
+      {k:"box", x:0, y:0, z:h-shelfT, w:w, d:d, h:shelfT, c:shelfCol, m:"paint"},
+      {k:"box", x:0, y:0, z:railZ, w:w-1, d:railThick, h:railThick, m:"steel"}
+    ];
+    if(w > 130){ p.push({k:"cyl", x:0, y:0, z:0, w:poleD, d:poleD, h:h, m:"steel"}); }
+    for(var i=0;i<n;i++){
+      var frac = 0.55 + 0.15*(i%3);
+      var gLen = Math.min(railZ, Math.max(2, available*frac));
+      var gx = xStart + slotW*(i+0.5);
+      var gw = slotW*0.7;
+      var gd = clamp(d*0.55, 4, Math.max(4, d-3));
+      var tone = (i%2===0) ? "#F3F1EA" : "#E9E4D8";
+      p.push({k:"box", x:gx, y:0, z:railZ-gLen, w:gw, d:gd, h:gLen, c:tone, m:"paint"});
+    }
+    return p;
   }
 };
 
@@ -2138,6 +2551,7 @@ var MODELS = {
 function modelFor(it){
   if(it.model && MODELS[it.model]) return it.model;
   var n = (it.name||"").toLowerCase(), c = it.cat;
+  if(c === "person"){ return "person"; }
   if(c === "bed"){
     if(n.indexOf("bunk") >= 0) return "bunk";
     if(n.indexOf("cot") >= 0) return "cot";
@@ -2230,6 +2644,23 @@ function buildItem3(it, ox, oy){
       new THREE.LineBasicMaterial({color:0x000000, opacity:.18, transparent:true}));
     grp.add(eg);
   }
+  if(opt.front){
+    var stripW = Math.min(Math.max(4, it.w*0.55), it.w*0.9);
+    var stripD = Math.min(Math.max(1, it.d*0.06), it.d*0.4);
+    var mkH = Math.min(0.6, it.h*0.12);
+    var mkOff = it.h*0.02;
+    var fy = it.d/2 - stripD/2, by = -fy;
+    var fGeo = new THREE.BoxGeometry(stripW/100, mkH/100, stripD/100);
+    fGeo.translate(0, (mkOff+mkH/2)/100, -fy/100);
+    var fMk = new THREE.Mesh(fGeo, matFor("paint","#FF2D6F",1,1));
+    fMk.castShadow = false; fMk.receiveShadow = false;
+    grp.add(fMk);
+    var bGeo = new THREE.BoxGeometry((stripW*0.65)/100, mkH/100, stripD/100);
+    bGeo.translate(0, (mkOff+mkH/2)/100, -by/100);
+    var bMk = new THREE.Mesh(bGeo, matFor("paint","#33393B",1,1));
+    bMk.castShadow = false; bMk.receiveShadow = false;
+    grp.add(bMk);
+  }
   grp.position.set((it.x+ox)/100, (it.z||0)/100, (it.y+oy)/100);
   grp.rotation.y = -it.rot*Math.PI/180;
   WORLD.add(grp);
@@ -2284,7 +2715,7 @@ function buildRoom3(R, ox, oy){
   for(k=0;k<ws.length;k++){
     var w = ws[k];
     var ov = (R.wallOv||{})[k] || {};
-    var wm = matFor(ov.mat || R.wallMat || "paint", ov.color || R.wallColor || "#EDECE6", w.len/100, hgt);
+    var wm = matFor(ov.mat || R.wallMat || "paint", ov.color || R.wallColor || "#EDECE6", w.len/100, hgt, false, opt.wallsGhost ? 0.15 : undefined);
     var ops = R.ops.filter(function(o){ return o.wall === k; })
       .map(function(o){ return {a:clamp(o.off,0,Math.max(0,w.len-o.w)), b:clamp(o.off,0,Math.max(0,w.len-o.w))+o.w, o:o}; })
       .sort(function(p,q){ return p.a-q.a; });
@@ -2319,7 +2750,7 @@ function wallPiece(w, u0, u1, y0, y1, t, mat, R, ox, oy){
   var m = new THREE.Mesh(g3, mat);
   m.position.set(px/100, (y0+y1)/200, py/100);
   m.rotation.y = -w.ang;
-  m.castShadow = true; m.receiveShadow = true;
+  m.castShadow = !opt.wallsGhost; m.receiveShadow = true;
   WORLD.add(m);
 }
 
@@ -2333,7 +2764,7 @@ function refreshAll(){
   $("wh").value = L.wallH; $("wt").value = L.wallT;
   setMode();
   renderVerts(); renderOps(); renderItems(); renderLayouts(); renderGroups();
-  renderMembers(); renderProps(); renderSurfaces(); renderTargets();
+  renderMembers(); renderProps(); renderSurfaces(); renderTargets(); renderTrash();
   dirty3 = true; draw();
 }
 
@@ -2537,22 +2968,27 @@ function renderProps(){
       '<label class="lbl">Position of the room X / Y (cm)</label>'+
       '<div class="row"><input class="f" id="rmx" type="number" value="'+Math.round(rm.ox)+'"><input class="f" id="rmy" type="number" value="'+Math.round(rm.oy)+'"></div>'+
       '<label class="lbl">Turn the room</label>'+
-      '<div class="row"><button class="btn" id="rmrot">Turn 90°</button></div>'+
+      '<div class="row"><button class="btn" id="rmrot45">45°</button><button class="btn" id="rmrot90">90°</button></div>'+
+      '<div class="row" style="margin-top:6px"><button class="btn" id="rmrot180">180°</button><button class="btn" id="rmrot360">360°</button></div>'+
       '<p class="note">Turning changes the room itself, so every floor plan that uses it turns as well.</p>'+
       '<div class="row" style="margin-top:12px"><button class="btn gh" id="rmopen">Open this room</button></div>'+
       '<div class="row" style="margin-top:6px"><button class="btn gh" id="rmdel">Take out of the plan</button></div>';
     on("rmn","change",function(){ rm.L.name = $("rmn").value || "Room"; touch(); renderLayouts(); renderMembers(); draw(); });
     on("rmx","change",function(){ rm.m.ox = num($("rmx").value, rm.ox); touch(); dirty3 = true; draw(); });
     on("rmy","change",function(){ rm.m.oy = num($("rmy").value, rm.oy); touch(); dirty3 = true; draw(); });
-    on("rmrot","click",function(){
+    var doRoomTurn = function(deg){
       var b0 = bbox(rm.L.poly);
-      rotateRoom(rm.L, 1);
+      turnRoom(rm.L, deg);
       var b1 = bbox(rm.L.poly);
       rm.m.ox += Math.round((b0.w - b1.w)/2);
       rm.m.oy += Math.round((b0.h - b1.h)/2);
       sel.off = {x:rm.m.ox, y:rm.m.oy};
       touch(); renderProps(); renderVerts(); renderSurfaces(); dirty3 = true; draw();
-    });
+    };
+    on("rmrot45","click",function(){ doRoomTurn(45); });
+    on("rmrot90","click",function(){ doRoomTurn(90); });
+    on("rmrot180","click",function(){ doRoomTurn(180); });
+    on("rmrot360","click",function(){ doRoomTurn(360); });
     on("rmopen","click",function(){ openLayout(rm.L.id); });
     on("rmdel","click",function(){
       G.members = G.members.filter(function(x){ return x.id !== rm.L.id; });
@@ -2696,6 +3132,7 @@ function renderProps(){
 }
 
 var MODEL_LABELS = {
+  person:"Person", railsystem:"Modular rail clothes system",
   slab:"Plain block", table:"Table", desk:"Desk", bed:"Bed", bedstore:"Bed with drawers",
   loftbed:"Loft or mid-sleeper bed", bunk:"Bunk bed", cot:"Cot", sofa:"Sofa or armchair",
   chair:"Chair", stool:"Stool", poang:"Frame armchair", wardrobe:"Wardrobe or cupboard",
@@ -2833,6 +3270,92 @@ function renderGroups(){
     el.addEventListener("click", function(){ openGroup(el.dataset.g); });
   });
 }
+/* --- trash --- */
+var TRASH_DAYS = 30;
+function relTime(ts){
+  var s = Math.max(0, Math.round((Date.now()-ts)/1000));
+  if(s < 60) return "just now";
+  var m = Math.round(s/60);
+  if(m < 60) return m+(m===1?" minute ago":" minutes ago");
+  var h = Math.round(m/60);
+  if(h < 24) return h+(h===1?" hour ago":" hours ago");
+  var d = Math.round(h/24);
+  return d+(d===1?" day ago":" days ago");
+}
+function purgeTrash(){
+  var cutoff = Date.now() - TRASH_DAYS*24*60*60*1000;
+  S.trash = (S.trash||[]).filter(function(t){ return t.deletedAt >= cutoff; });
+}
+function trashPush(kind, data){
+  S.trash = S.trash || [];
+  S.trash.push({id:uid(), kind:kind, deletedAt:Date.now(), data:data});
+  return S.trash[S.trash.length-1];
+}
+function restoreTrash(tid){
+  var idx = S.trash.findIndex(function(t){ return t.id === tid; });
+  if(idx < 0) return;
+  var t = S.trash[idx];
+  S.trash.splice(idx,1);
+  if(t.kind === "room"){ S.layouts.push(t.data); renderMembers(); }
+  else{ S.groups.push(t.data); }
+  touch(); renderLayouts(); renderGroups(); renderTargets(); renderTrash();
+  toast('Restored "'+t.data.name+'".');
+}
+function forgetForever(tid){
+  S.trash = (S.trash||[]).filter(function(t){ return t.id !== tid; });
+  touch(); renderTrash();
+}
+function renderTrash(){
+  var host = $("trashList"), btn = $("emptyTrash");
+  if(!host) return;
+  purgeTrash();
+  disarm("emptyTrash","Empty trash");
+  if(!S.trash.length){
+    host.innerHTML = '<p class="empty">Nothing deleted recently.</p>';
+    if(btn){ btn.disabled = true; }
+    return;
+  }
+  if(btn){ btn.disabled = false; }
+  var ordered = S.trash.slice().sort(function(a,b){ return b.deletedAt - a.deletedAt; });
+  var html = "";
+  ordered.forEach(function(t){
+    html += '<div class="item">'+
+      '<span class="n">'+esc(t.data.name)+'</span>'+
+      '<span class="m">'+(t.kind==="room"?"Room":"Floor plan")+' · '+relTime(t.deletedAt)+'</span>'+
+      '<button class="x ok" data-restore="'+t.id+'" title="Restore">↺</button>'+
+      '<button class="x" data-forget="'+t.id+'" title="Delete forever">×</button></div>';
+  });
+  host.innerHTML = html;
+  Array.prototype.forEach.call(host.querySelectorAll("[data-restore]"), function(b){
+    b.addEventListener("click", function(){ restoreTrash(b.dataset.restore); });
+  });
+  Array.prototype.forEach.call(host.querySelectorAll("[data-forget]"), function(b){
+    b.addEventListener("click", function(){
+      if(b.dataset.arm !== "1"){
+        b.dataset.arm = "1"; b.textContent = "!"; b.title = "Click again to delete forever";
+        clearTimeout(b._t);
+        b._t = setTimeout(function(){ b.dataset.arm = "0"; b.textContent = "×"; b.title = "Delete forever"; }, 4000);
+        return;
+      }
+      forgetForever(b.dataset.forget);
+    });
+  });
+}
+on("emptyTrash","click", function(){
+  var b = $("emptyTrash");
+  if(!S.trash || !S.trash.length) return;
+  if(b.dataset.arm !== "1"){
+    b.dataset.arm = "1"; b.textContent = "Confirm — empty trash"; b.classList.add("danger");
+    clearTimeout(b._t);
+    b._t = setTimeout(function(){ disarm("emptyTrash","Empty trash"); }, 5000);
+    return;
+  }
+  disarm("emptyTrash","Empty trash");
+  S.trash = [];
+  touch(); renderTrash();
+  toast("Trash emptied.");
+});
+
 function renderMembers(){
   var host = $("members"), sl = $("addRoomSel"), html = "", i;
   if(!host || !sl) return;
@@ -2900,12 +3423,14 @@ function addRoomToGroup(id){
   setTool("rooms"); dirty3 = true; fit();
   toast('Added "'+lay.name+'". Drag it into place.');
 }
-on("newG","click", function(){
+function createFloorPlan(){
   var x = newGroup("Floor plan "+(S.groups.length+1));
   if(L){ x.members.push({id:L.id, ox:0, oy:0}); }
   S.groups.push(x); openGroup(x.id);
   toast("Floor plan created.");
-});
+}
+on("newG","click", createFloorPlan);
+on("gpNew","click", createFloorPlan);
 on("dupG","click", function(){
   var t = targetGroup();
   if(!t){ toast(S.groups.length ? "Open a floor plan first." : "Make a floor plan first."); return; }
@@ -2925,9 +3450,10 @@ on("delG","click", function(){
   disarm("delG","Delete plan");
   var gone = t.name, tid = t.id;
   S.groups = S.groups.filter(function(x){ return x.id !== tid; });
+  var entry = trashPush("group", t);
   if(S.lastGroup === tid){ S.lastGroup = null; }
   openLayout(L ? L.id : S.layouts[0].id);
-  toast('Deleted "'+gone+'". The rooms are still in your list.');
+  toast('Deleted "'+gone+'". The rooms are still in your list.', {label:"UNDO", fn:function(){ restoreTrash(entry.id); }});
 });
 on("addRoomBtn","click", function(){ addRoomToGroup($("addRoomSel").value); });
 on("nrAdd","click", addNewRoomToGroup);
@@ -3187,6 +3713,54 @@ on("lname","input", function(){
 on("wh","change", function(){ L.wallH = clamp(num($("wh").value,240),100,600); touch(); dirty3 = true; });
 on("wt","change", function(){ L.wallT = clamp(num($("wt").value,10),2,60); touch(); dirty3 = true; draw(); });
 
+function lshapePoints(w, d, nw, nd, corner){
+  w = Math.max(1, w); d = Math.max(1, d);
+  nw = clamp(nw, 1, w-1); nd = clamp(nd, 1, d-1);
+  if(corner === "tr"){ return [{x:0,y:0},{x:w-nw,y:0},{x:w-nw,y:nd},{x:w,y:nd},{x:w,y:d},{x:0,y:d}]; }
+  if(corner === "tl"){ return [{x:nw,y:0},{x:w,y:0},{x:w,y:d},{x:0,y:d},{x:0,y:nd},{x:nw,y:nd}]; }
+  if(corner === "br"){ return [{x:0,y:0},{x:w,y:0},{x:w,y:d-nd},{x:w-nw,y:d-nd},{x:w-nw,y:d},{x:0,y:d}]; }
+  return [{x:0,y:0},{x:w,y:0},{x:w,y:d},{x:nw,y:d},{x:nw,y:d-nd},{x:0,y:d-nd}];
+}
+var lCorner = "tr";
+function dimLine(x1,y1,x2,y2,text,vertical){
+  var mx=(x1+x2)/2, my=(y1+y2)/2, rot = vertical ? ' transform="rotate(-90 '+mx+' '+my+')"' : '';
+  return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#8D9B96" stroke-width="1"/>'+
+    '<text x="'+mx+'" y="'+my+'"'+rot+' font-size="9" fill="#8D9B96" text-anchor="middle" dy="-4" font-family="ui-monospace,Menlo,Consolas,monospace">'+text+'</text>';
+}
+function renderLShapePreview(){
+  var host = $("lshapePreview");
+  if(!host) return;
+  var w = Math.max(50, num($("lw").value,270));
+  var d = Math.max(50, num($("ld").value,400));
+  var nw = clamp(num($("nw").value,140), 1, w-1);
+  var nd = clamp(num($("nd").value,70), 1, d-1);
+  var pts = lshapePoints(w, d, nw, nd, lCorner);
+  var vbW = 220, vbH = 156, pad = 28;
+  var sc = Math.min((vbW-pad*2)/w, (vbH-pad*2)/d);
+  var ox = (vbW - w*sc)/2, oy = (vbH - d*sc)/2;
+  var sp = pts.map(function(p){ return (ox+p.x*sc).toFixed(1)+","+(oy+p.y*sc).toFixed(1); }).join(" ");
+  var svg = '<svg viewBox="0 0 '+vbW+' '+vbH+'" xmlns="http://www.w3.org/2000/svg">'+
+    '<polygon points="'+sp+'" fill="rgba(255,45,111,.16)" stroke="#FF2D6F" stroke-width="2" stroke-linejoin="round"/>'+
+    dimLine(ox, oy-10, ox+w*sc, oy-10, Math.round(w)+" cm") +
+    dimLine(ox-10, oy, ox-10, oy+d*sc, Math.round(d)+" cm", true) +
+    '</svg>';
+  host.innerHTML = svg;
+}
+on("lw","input", renderLShapePreview);
+on("ld","input", renderLShapePreview);
+on("nw","input", renderLShapePreview);
+on("nd","input", renderLShapePreview);
+Array.prototype.forEach.call($("cornerpick").querySelectorAll("button"), function(b){
+  b.addEventListener("click", function(){
+    lCorner = b.dataset.c;
+    Array.prototype.forEach.call($("cornerpick").querySelectorAll("button"), function(x){
+      x.setAttribute("aria-pressed", x === b ? "true" : "false");
+    });
+    renderLShapePreview();
+  });
+});
+renderLShapePreview();
+
 on("mkRect","click", function(){
   var w = Math.max(50,num($("rw").value,270)), d = Math.max(50,num($("rd").value,400));
   L.poly = [{x:0,y:0},{x:w,y:0},{x:w,y:d},{x:0,y:d}];
@@ -3195,12 +3769,8 @@ on("mkRect","click", function(){
 on("mkL","click", function(){
   var w = Math.max(50,num($("lw").value,270)), d = Math.max(50,num($("ld").value,400));
   var nw = clamp(num($("nw").value,140),1,w-1), nd = clamp(num($("nd").value,70),1,d-1);
-  var c = $("ncor").value, p;
-  if(c === "tr"){ p = [{x:0,y:0},{x:w-nw,y:0},{x:w-nw,y:nd},{x:w,y:nd},{x:w,y:d},{x:0,y:d}]; }
-  else if(c === "tl"){ p = [{x:nw,y:0},{x:w,y:0},{x:w,y:d},{x:0,y:d},{x:0,y:nd},{x:nw,y:nd}]; }
-  else if(c === "br"){ p = [{x:0,y:0},{x:w,y:0},{x:w,y:d-nd},{x:w-nw,y:d-nd},{x:w-nw,y:d},{x:0,y:d}]; }
-  else { p = [{x:0,y:0},{x:w,y:0},{x:w,y:d},{x:nw,y:d},{x:nw,y:d-nd},{x:0,y:d-nd}]; }
-  L.poly = p; normaliseOps(); touch(); renderVerts(); renderOps(); renderSurfaces(); dirty3 = true; fit(); frame3();
+  L.poly = lshapePoints(w, d, nw, nd, lCorner);
+  normaliseOps(); touch(); renderVerts(); renderOps(); renderSurfaces(); dirty3 = true; fit(); frame3();
 });
 on("tDraw","click", function(){ setTool(tool === "draw" ? "select" : "draw"); });
 on("tEdit","click", function(){ setTool(tool === "edit" ? "select" : "edit"); });
@@ -3235,13 +3805,11 @@ on("delL","click", function(){
     return;
   }
   disarm("delL","Delete room");
-  var gone = L.name, gid = L.id;
+  var gone = L.name, gid = L.id, doomed = L;
   S.layouts = S.layouts.filter(function(x){ return x.id !== gid; });
-  S.groups.forEach(function(gr){
-    gr.members = (gr.members||[]).filter(function(m){ return m.id !== gid; });
-  });
+  var entry = trashPush("room", doomed);
   openLayout(S.layouts[0].id);
-  toast('Deleted "'+gone+'".');
+  toast('Deleted "'+gone+'".', {label:"UNDO", fn:function(){ restoreTrash(entry.id); }});
 });
 on("expJ","click", exportJSON);
 on("expP","click", exportPNG);
@@ -3262,6 +3830,8 @@ on("tFit","click", function(){ if(document.body.classList.contains("v3d")){ fram
 on("tGrid","click", function(){ opt.grid = !opt.grid; $("tGrid").setAttribute("aria-pressed", opt.grid); draw(); });
 on("tDim","click", function(){ opt.dim = !opt.dim; $("tDim").setAttribute("aria-pressed", opt.dim); draw(); });
 on("tClr","click", function(){ opt.clr = !opt.clr; $("tClr").setAttribute("aria-pressed", opt.clr); draw(); });
+on("tWalls","click", function(){ opt.wallsGhost = !opt.wallsGhost; $("tWalls").setAttribute("aria-pressed", opt.wallsGhost); dirty3 = true; });
+on("tFront","click", function(){ opt.front = !opt.front; $("tFront").setAttribute("aria-pressed", opt.front); dirty3 = true; });
 
 on("b2d","click", function(){ setView("2d"); });
 on("b3d","click", function(){ setView("3d"); });
@@ -3340,6 +3910,7 @@ if(window.matchMedia("(max-width:900px)").matches){ $("menu").style.display = "g
 /* go */
 sizeCanvas();
 load();
+if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(function(){}); }
 </script>
 </body>
 </html>
